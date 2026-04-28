@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "913412488533",
+    "project_id": "gigmap-480a6",
+    "storage_bucket": "gigmap-480a6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:913412488533:android:6b62389842ab2a4a5f03dc",
+        "android_client_info": {
+          "package_name": "com.example.gigmap_frontend_sprint1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBNSVA-8ODYS6rnYztGAju1yv6pu1aULyI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
