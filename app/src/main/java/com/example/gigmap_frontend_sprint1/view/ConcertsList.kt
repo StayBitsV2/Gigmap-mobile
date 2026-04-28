@@ -73,11 +73,20 @@ fun ConcertsList(
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val selectedGenres = remember { mutableStateListOf<String>() }
+    val appliedGenres = remember { mutableStateListOf<String>() }
+    var searchText by remember { mutableStateOf("") }
 
     val currentUser = userVm.listaUsers.find { it.id == userVm.currentUserId }
 
-    LaunchedEffect(concerts.isEmpty()) {
-        if (concerts.isEmpty()) concertVM.getConcerts()
+    LaunchedEffect(Unit) {
+        concertVM.getConcerts()
+    }
+
+
+    val filteredConcerts = concerts.filter { concert ->
+        val matchesSearch = concert.name.contains(searchText, ignoreCase = true)
+        val matchesGenre = appliedGenres.isEmpty() || appliedGenres.contains(concert.genre.uppercase())
+        matchesSearch && matchesGenre
     }
 
     val allGenres = listOf(
@@ -148,10 +157,9 @@ fun ConcertsList(
 
                 Button(
                     onClick = {
-                        if (selectedGenres.isEmpty()) concertVM.getConcerts()
-                        else concertVM.filterByMultipleGenres(selectedGenres)
-                        scope.launch { drawerState.close() }
-                    },
+                        appliedGenres.clear()
+                        appliedGenres.addAll(selectedGenres)
+                        scope.launch { drawerState.close() } },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5C0F1A)),
                     shape = RoundedCornerShape(15.dp),
                     modifier = Modifier.fillMaxWidth()
@@ -168,7 +176,8 @@ fun ConcertsList(
                         .fillMaxWidth()
                         .clickable {
                             selectedGenres.clear()
-                            concertVM.getConcerts()
+                            appliedGenres.clear()
+                            searchText = ""
                             scope.launch { drawerState.close() }
                         }
                         .padding(top = 12.dp)
@@ -196,28 +205,29 @@ fun ConcertsList(
                         .background(Color.White)
                         .padding(top = 10.dp, bottom = 6.dp)
                 ) {
-                    Row(
+
+                    OutlinedTextField(
+                        value = searchText,
+                        onValueChange = { searchText = it },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.Search, contentDescription = "Buscar", tint = Color(0xFF5C0F1A))
-                        Text(
-                            text = "Filtrar por género",
-                            color = Color(0xFF5C0F1A),
-                            fontWeight = FontWeight.Medium
-                        )
-                        Icon(
-                            Icons.Default.FilterAlt,
-                            contentDescription = "Abrir filtro",
-                            tint = Color(0xFF5C0F1A),
-                            modifier = Modifier.clickable {
-                                scope.launch { drawerState.open() }
-                            }
-                        )
-                    }
+                            .padding(horizontal = 16.dp),
+                        placeholder = { Text("Buscar conciertos...") },
+                        leadingIcon = {
+                            Icon(Icons.Default.Search, contentDescription = "Buscar")
+                        },
+                        trailingIcon = {
+                            Icon(
+                                Icons.Default.FilterAlt,
+                                contentDescription = "Abrir filtro",
+                                tint = Color(0xFF5C0F1A),
+                                modifier = Modifier.clickable {
+                                    scope.launch { drawerState.open() }
+                                }
+                            )
+                        },
+                        shape = RoundedCornerShape(16.dp)
+                    )
                 }
             },
             containerColor = Color.White
@@ -235,13 +245,26 @@ fun ConcertsList(
                     ) {
                         CircularProgressIndicator(color = Color(0xFF5C0F1A))
                     }
+                } else if (filteredConcerts.isEmpty()) {
+
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No se encontraron conciertos",
+                            color = Color.Gray,
+                            fontSize = 16.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(concerts) { concert ->
+                        items(filteredConcerts) { concert -> 
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -260,7 +283,6 @@ fun ConcertsList(
                                         contentScale = ContentScale.Crop
                                     )
                                     Column(Modifier.padding(12.dp)) {
-                                        // ── Nombre + badge status ──
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -277,15 +299,9 @@ fun ConcertsList(
                                             Spacer(Modifier.width(8.dp))
                                             val effectiveStatus = remember(concert.date) {
                                                 try {
-                                                    val concertDate = java.time.LocalDateTime.parse(
-                                                        concert.date.take(19)
-                                                    )
-                                                    if (concertDate.isBefore(java.time.LocalDateTime.now())
-                                                        && concert.status == "PUBLICADO") {
-                                                        "FINALIZADO"
-                                                    } else {
-                                                        concert.status
-                                                    }
+                                                    val concertDate = java.time.LocalDateTime.parse(concert.date.take(19))
+                                                    if (concertDate.isBefore(java.time.LocalDateTime.now()) && concert.status == "PUBLICADO") "FINALIZADO"
+                                                    else concert.status
                                                 } catch (e: Exception) {
                                                     concert.status
                                                 }
@@ -325,33 +341,31 @@ fun RightSideDrawer(
     drawerContent: @Composable ColumnScope.() -> Unit,
     content: @Composable () -> Unit
 ) {
-    BoxWithConstraints {
-        Row(modifier = Modifier.fillMaxSize()) {
-            Box(Modifier.weight(1f)) { content() }
-
-            AnimatedVisibility(
-                visible = drawerState.isOpen,
-                enter = slideInHorizontally(initialOffsetX = { fullWidth -> fullWidth }),
-                exit = slideOutHorizontally(targetOffsetX = { fullWidth -> fullWidth })
+    Box(modifier = Modifier.fillMaxSize()) {
+        content()
+        AnimatedVisibility(
+            visible = drawerState.isOpen,
+            enter = slideInHorizontally(initialOffsetX = { fullWidth -> fullWidth }),
+            exit = slideOutHorizontally(targetOffsetX = { fullWidth -> fullWidth }),
+            modifier = Modifier.align(Alignment.CenterEnd)
+        ) {
+            Surface(
+                tonalElevation = 8.dp,
+                shadowElevation = 12.dp,
+                shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp),
+                color = Color.White,
+                modifier = Modifier
+                    .width(260.dp)
+                    .fillMaxHeight()
             ) {
-                Surface(
-                    tonalElevation = 8.dp,
-                    shadowElevation = 12.dp,
-                    shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp),
-                    color = Color.White,
+                Column(
                     modifier = Modifier
-                        .width(260.dp)
-                        .fillMaxHeight()
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.Top,
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        content = drawerContent
-                    )
-                }
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.Top,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    content = drawerContent
+                )
             }
         }
     }
