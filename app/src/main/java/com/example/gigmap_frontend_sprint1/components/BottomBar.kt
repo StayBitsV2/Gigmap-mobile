@@ -70,7 +70,7 @@ fun BottomBar(
         BottomBarItem(Icons.Default.Settings)
     )
 
-    val itemLabels = listOf("Home", "Mapa", "Comunidades", "Configuración")
+    val itemLabels = listOf("Home", "Mapa", "Comunidades", "Perfil")
 
     val circleRadius = 32.dp
     val iconSize = 28.dp
