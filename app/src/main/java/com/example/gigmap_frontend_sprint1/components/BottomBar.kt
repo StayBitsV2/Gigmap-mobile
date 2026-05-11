@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -68,6 +69,8 @@ fun BottomBar(
         BottomBarItem(Icons.Default.Group),
         BottomBarItem(Icons.Default.Settings)
     )
+
+    val itemLabels = listOf("Home", "Mapa", "Comunidades", "Configuración")
 
     val circleRadius = 32.dp
     val iconSize = 28.dp
@@ -126,12 +129,13 @@ fun BottomBar(
                 .size(circleRadius * 2)
                 .clip(CircleShape)
                 .background(circleColor)
+                .testTag("tab_${itemLabels[selectedItem]}")
                 .clickable { onItemSelected(selectedItem) },
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = items[selectedItem].icon,
-                contentDescription = null,
+                contentDescription = itemLabels[selectedItem],
                 modifier = Modifier.size(iconSize),
                 tint = selectedIconColor
             )
@@ -155,13 +159,14 @@ fun BottomBar(
                     modifier = Modifier
                         .weight(1f)
                         .size(barHeight)
+                        .testTag("tab_${itemLabels[index]}")
                         .clickable { onItemSelected(index) },
                     contentAlignment = Alignment.Center
                 ) {
                     if (!isSelected) {
                         Icon(
                             imageVector = item.icon,
-                            contentDescription = null,
+                            contentDescription = itemLabels[index],
                             modifier = Modifier.size(iconSize),
                             tint = unselectedIconColor
                         )
