@@ -1,0 +1,132 @@
+{
+  "id": "02310ccd-7f86-4039-8579-2b0f4c022bcc",
+  "version": "2.0",
+  "name": "Gigmap-project-test",
+  "url": "https://staybits.github.io/GigMap-LandingPage-V2/es/",
+  "tests": [{
+    "id": "1e62ae31-c0e0-4006-83e1-e64cd681554d",
+    "name": "Ver beneficios para fans",
+    "commands": [{
+      "id": "05997f30-b0bd-45a2-bc6a-8983e4b83088",
+      "comment": "",
+      "command": "open",
+      "target": "https://staybits.github.io/GigMap-LandingPage-V2/es/",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "dc0464c2-e29c-4e1e-ab18-43d6c12b7c7d",
+      "comment": "",
+      "command": "setWindowSize",
+      "target": "1936x1056",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "55ae7c2a-2416-4bc1-847e-6365cddfdf04",
+      "comment": "",
+      "command": "click",
+      "target": "linkText=Para Fans",
+      "targets": [
+        ["linkText=Para Fans", "linkText"],
+        ["css=.py-2:nth-child(2) > .link", "css:finder"],
+        ["xpath=//a[contains(text(),'Para Fans')]", "xpath:link"],
+        ["xpath=//ul[@id='nav-menu']/li[2]/a", "xpath:idRelative"],
+        ["xpath=//a[contains(@href, '/GigMap-LandingPage-V2/es/fans/')]", "xpath:href"],
+        ["xpath=//li[2]/a", "xpath:position"],
+        ["xpath=//a[contains(.,'Para Fans')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }]
+  }, {
+    "id": "52b1f88f-846e-4766-b506-9068edd3234b",
+    "name": "Ver beneficios para artista",
+    "commands": [{
+      "id": "30e28eed-1f8f-4288-a1cd-ff01aa181755",
+      "comment": "",
+      "command": "open",
+      "target": "https://staybits.github.io/GigMap-LandingPage-V2/es/",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "871435ae-43d7-4154-9ccb-1c1de84ea523",
+      "comment": "",
+      "command": "setWindowSize",
+      "target": "1936x1056",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "5b9370ff-0c05-4ed6-8951-a544ae081e2a",
+      "comment": "",
+      "command": "click",
+      "target": "linkText=Para Artistas",
+      "targets": [
+        ["linkText=Para Artistas", "linkText"],
+        ["css=.py-2:nth-child(3) > .link", "css:finder"],
+        ["xpath=//a[contains(text(),'Para Artistas')]", "xpath:link"],
+        ["xpath=//ul[@id='nav-menu']/li[3]/a", "xpath:idRelative"],
+        ["xpath=//a[contains(@href, '/GigMap-LandingPage-V2/es/artists/')]", "xpath:href"],
+        ["xpath=//li[3]/a", "xpath:position"],
+        ["xpath=//a[contains(.,'Para Artistas')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }]
+  }, {
+    "id": "70060040-d04d-42b7-aa39-0b7757d92f74",
+    "name": "Acceder a testimonios",
+    "commands": [{
+      "id": "bc18fb0f-0267-4483-9bcb-9195170bcb3e",
+      "comment": "",
+      "command": "open",
+      "target": "/GigMap-LandingPage-V2/es/",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "f9367f06-12df-458a-9805-213e92f02240",
+      "comment": "",
+      "command": "setWindowSize",
+      "target": "1936x1056",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "ec171e70-a53b-4968-bef1-aa2cef6ae152",
+      "comment": "",
+      "command": "click",
+      "target": "css=.bg-\\(--bg\\):nth-child(2) > div > .mb-8",
+      "targets": [
+        ["css=.bg-\\(--bg\\):nth-child(2) > div > .mb-8", "css:finder"],
+        ["xpath=//section[2]/div[2]/div/div[2]/div/h4", "xpath:position"],
+        ["xpath=//h4[contains(.,'Cuando Harry vino a Perú, me enteré muy tarde. Si hubiera tenido GigMap, no me lo perdía. Ahora no dejo que ningún concierto me pase de largo. Amo que la app me avise antes que nadie.')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "60c48de8-736a-4e97-a7ce-010382cb3370",
+      "comment": "",
+      "command": "click",
+      "target": "css=.md\\3A\\[\\&\\>\\*\\3Alast-child\\]\\3A col-span-2 > .bg-\\(--bg\\):nth-child(1)",
+      "targets": [
+        ["css=.md\\3A\\[\\&\\>\\*\\3Alast-child\\]\\3A col-span-2 > .bg-\\(--bg\\):nth-child(1)", "css:finder"],
+        ["xpath=//section[2]/div[2]/div/div", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "b4256afc-1175-49d2-9da2-8dcadafa70d5",
+      "comment": "",
+      "command": "click",
+      "target": "css=.md\\3A\\[\\&\\>\\*\\3Alast-child\\]\\3A col-span-2 > .bg-\\(--bg\\):nth-child(3)",
+      "targets": [
+        ["css=.md\\3A\\[\\&\\>\\*\\3Alast-child\\]\\3A col-span-2 > .bg-\\(--bg\\):nth-child(3)", "css:finder"],
+        ["xpath=//section[2]/div[2]/div/div[3]", "xpath:position"]
+      ],
+      "value": ""
+    }]
+  }],
+  "suites": [{
+    "id": "a72864e3-721e-44a5-949b-026048bf01df",
+    "name": "Default Suite",
+    "persistSession": false,
+    "parallel": false,
+    "timeout": 300,
+    "tests": []
+  }],
+  "urls": ["https://staybits.github.io/", "https://staybits.github.io/GigMap-LandingPage-V2/es/"],
+  "plugins": []
+}
