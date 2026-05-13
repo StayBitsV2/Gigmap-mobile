@@ -37,6 +37,8 @@ import com.google.maps.android.compose.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 fun Map(nav: NavHostController) {
@@ -86,10 +88,15 @@ fun Map(nav: NavHostController) {
                 CancellationTokenSource().token
             ).await()
             loc?.let {
-                camera.animate(
-                    CameraUpdateFactory.newLatLngZoom(LatLng(it.latitude, it.longitude), 13f),
+                    withContext(Dispatchers.Main) {
+                    camera.animate(
+                    CameraUpdateFactory.newLatLngZoom(
+                    LatLng(it.latitude, it.longitude),
+                    13f
+                     ),
                     700
-                )
+                    )
+                }
             }
         }
     }
@@ -173,12 +180,15 @@ fun Map(nav: NavHostController) {
                     onClick = {
                         selectedIndex = index
                         scope.launch {
+                            withContext(Dispatchers.Main) {
                             camera.animate(
-                                CameraUpdateFactory.newLatLngZoom(
-                                    LatLng(item.venue.latitude, item.venue.longitude), 16f
-                                ),
-                                500
+                            CameraUpdateFactory.newLatLngZoom(
+                            LatLng(item.venue.latitude, item.venue.longitude),
+                              16f
+                              ),
+                             500
                             )
+                        }
                         }
                     }
                 )

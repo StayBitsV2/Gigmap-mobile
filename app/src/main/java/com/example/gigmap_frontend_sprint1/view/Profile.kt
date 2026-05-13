@@ -182,24 +182,7 @@ fun Profile(
                             Text(text = "Editar perfil", color = Color.White)
                         }
                     } else {
-                        Button(
-                            onClick = {
-                                isFollowing = !isFollowing
-                                coroutineScope.launch {
-                                    if (isFollowing) snackbarHostState.showSnackbar("✅ Sigues a ${currentUser?.name ?: "usuario"}")
-                                    else snackbarHostState.showSnackbar("Has dejado de seguir a ${currentUser?.name ?: "usuario"}")
-                                }
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isFollowing) Color.Gray else Color(0xFF5C0F1A)
-                            ),
-                            shape = MaterialTheme.shapes.small
-                        ) {
-                            Text(
-                                text = if (isFollowing) "Siguiendo" else "Seguir",
-                                color = Color.White
-                            )
-                        }
+                        
                     }
                 }
             }

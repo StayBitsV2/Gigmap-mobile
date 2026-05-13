@@ -35,7 +35,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
-
+import java.time.LocalDate
 @Composable
 fun CreateConcert(
     navController: NavHostController,
@@ -512,12 +512,12 @@ fun CreateConcert(
                             snackbarHostState.showSnackbar("Ingresa la fecha completa del concierto")
                             return@launch
                         }
-
+                            /* 
                         // Validación 3: Imagen obligatoria
                         if (uploadedUrl.isNullOrBlank()) {
                             snackbarHostState.showSnackbar("Debes subir una imagen del concierto")
                             return@launch
-                        }
+                        }*/
 
                         // Validación 4: Plataforma
                         if (platformName.isBlank()) {
@@ -551,7 +551,25 @@ fun CreateConcert(
                         }
 
                         val (lat, lng) = coordinates
+                        try {
+                         val selectedDate = LocalDate.of(
+                             year.toInt(),
+                             month.toInt(),
+                            day.toInt()
+                                )
 
+                            val today = LocalDate.now()
+
+                            if (selectedDate.isBefore(today)) {
+                            snackbarHostState.showSnackbar("La fecha del concierto no puede ser anterior a hoy")
+                            return@launch
+                        }
+                        } catch (e: Exception) {
+                         snackbarHostState.showSnackbar("Fecha inválida")
+                            return@launch
+                        }
+                        val finalImageUrl = uploadedUrl ?: "https://png.pngtree.com/thumb_back/fh260/background/20240610/pngtree-concert-light-show-stage-lights-image_15746702.jpg"
+                       
                         // Formatear fecha en ISO 8601 con hora actual (sin milisegundos)
                         val dayFormatted = day.padStart(2, '0')
                         val monthFormatted = month.padStart(2, '0')
@@ -564,7 +582,7 @@ fun CreateConcert(
                         val concertRequest = ConcertCreateRequest(
                             title = title,
                             description = description,
-                            imageUrl = uploadedUrl!!,
+                           imageUrl = finalImageUrl,
                             date = dateISO,
                             genre = genre,
                             platform = PlatformRequest(platformName, platformImage),
