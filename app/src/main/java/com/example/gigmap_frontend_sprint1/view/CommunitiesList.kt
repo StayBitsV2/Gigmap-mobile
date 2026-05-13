@@ -44,7 +44,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.gigmap_frontend_sprint1.viewmodel.CommunityViewModel
-
+import androidx.compose.ui.platform.testTag
 import coil.compose.AsyncImage
 
 
@@ -80,6 +80,7 @@ fun CommunitiesList(nav: NavHostController, viewModel: CommunityViewModel = view
                     Box(
                         modifier = Modifier
                             .size(55.dp)
+                            .testTag("btnCrearComunidad")
                             .clip(CircleShape)
                             .background(Color(0xFF5C0F1A))
                             .clickable {

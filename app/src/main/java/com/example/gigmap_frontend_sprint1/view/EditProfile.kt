@@ -221,37 +221,6 @@ fun EditProfile(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Selector de Role (ARTIST / FAN)
-            Text(text = "Tipo de usuario", modifier = Modifier.fillMaxWidth(), fontWeight = FontWeight.SemiBold)
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(
-                    onClick = { role = "ARTIST" },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (role == "ARTIST") Color(0xFF5C0F1A) else Color.Transparent,
-                        contentColor = if (role == "ARTIST") Color.White else Color.Black
-                    ),
-                    border = BorderStroke(1.dp, Color(0xFF5C0F1A)),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Artista")
-                }
-
-                Button(
-                    onClick = { role = "FAN" },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (role == "FAN") Color(0xFF5C0F1A) else Color.Transparent,
-                        contentColor = if (role == "FAN") Color.White else Color.Black
-                    ),
-                    border = BorderStroke(1.dp, Color(0xFF5C0F1A)),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Fan")
-                }
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
 
             // Botón Guardar
             Button(

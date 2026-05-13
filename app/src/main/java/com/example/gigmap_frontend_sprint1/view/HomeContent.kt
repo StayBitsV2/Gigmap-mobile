@@ -299,40 +299,8 @@
 
 
         }
-        FloatingActionButton(
-            onClick = { isChatOpen.value = true },
-            backgroundColor = Color(0xFF5C0F1A),
-            contentColor = Color.White,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(20.dp)
-        ) {
-            if(isChatOpen.value == true){
-                Icon(imageVector = FontAwesomeIcons.Solid.Cat
-                    , contentDescription = "Abrir chat M1AU"
-                    ,modifier = Modifier.size(24.dp)
-                )
-            }else{
-                Icon(imageVector = Icons.Default.CatchingPokemon
-                    , contentDescription = "Abrir chat M1AU"
-                    ,modifier = Modifier.size(24.dp)
-                )
-
-            }
 
 
-
-        }
-
-        M1AUChatModal(
-            isOpen = isChatOpen,
-            viewModel = chatViewModel,
-            onNavigateToArtist = { artistId, _ ->
-                artistId?.toIntOrNull()?.let { nav.navigate("user/$it") }
-            },
-            onNavigateToConcert = { id, _ ->
-                id?.toIntOrNull()?.let { nav.navigate("concert/$it") }
-            }
-        )
+        
     }
     }

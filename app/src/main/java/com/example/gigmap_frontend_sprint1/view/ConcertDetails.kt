@@ -250,20 +250,7 @@ fun ConcertDetails(
                 )
             }
 
-            Button(
-                onClick = { /* tickets */ },
-                modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2C2C2C)),
-                shape = RoundedCornerShape(8.dp),
-                contentPadding = PaddingValues(vertical = 12.dp)
-            ) {
-                Text(
-                    text = "Tickets",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    fontFamily = InterFontFamily
-                )
-            }
+
         }
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -345,7 +332,7 @@ fun ConcertDetails(
                                     Text(text = formatRelatedEventDate(relatedEvent.datehour), fontSize = 12.sp, fontFamily = InterFontFamily, color = Color.White)
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
-
+                                /* 
                                 OutlinedButton(
                                     onClick = {
                                         if (loading) return@OutlinedButton
@@ -384,6 +371,7 @@ fun ConcertDetails(
                                         )
                                     }
                                 }
+                                */
                             }
                         }
                     }
@@ -497,19 +485,7 @@ fun ConcertDetails(
                                 )
                             }
 
-                            Button(
-                                onClick = { },
-                                colors = ButtonDefaults.buttonColors(containerColor = BurgundyDark),
-                                shape = RoundedCornerShape(10.dp),
-                                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 6.dp)
-                            ) {
-                                Text(
-                                    text = "Seguir",
-                                    fontSize = 13.sp,
-                                    fontFamily = InterFontFamily,
-                                    fontWeight = FontWeight.SemiBold,
-                                )
-                            }
+                           
                         }
                     }
                     Spacer(modifier = Modifier.height(10.dp))
