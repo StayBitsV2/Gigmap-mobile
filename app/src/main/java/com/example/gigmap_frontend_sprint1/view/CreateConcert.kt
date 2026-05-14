@@ -479,21 +479,25 @@ fun CreateConcert(
                 fontFamily = InterFontFamily,
                 fontSize = 16.sp
             )
-            OutlinedTextField(
-                value = venueCapacity,
-                onValueChange = { venueCapacity = it },
+           OutlinedTextField(
+             value = venueCapacity,
+                onValueChange = {
+                if (it.isEmpty() || it.all { char -> char.isDigit() }) {
+                    venueCapacity = it
+                    }
+                },
                 placeholder = {
-                    Text(
-                        "Capacidad del recinto",
-                        color = Color(0xFF8E8787),
-                        fontWeight = FontWeight.Medium,
-                        fontFamily = InterFontFamily,
-                        fontSize = 16.sp
+                 Text(
+                 "Capacidad del recinto",
+                  color = Color(0xFF8E8787),
+                  fontWeight = FontWeight.Medium,
+                  fontFamily = InterFontFamily,
+                  fontSize = 16.sp
                     )
                 },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
-            )
+                )
 
             Spacer(Modifier.height(24.dp))
 
@@ -538,7 +542,7 @@ fun CreateConcert(
                         }
 
                         // Validación 7: Capacidad
-                        if (venueCapacity.isBlank() || venueCapacity.toIntOrNull() == null) {
+                        if (venueCapacity.isBlank() || venueCapacity.toIntOrNull() == null || venueCapacity.toInt() < 5000 || venueCapacity.toInt() > 80000 ) {
                             snackbarHostState.showSnackbar("Ingresa una capacidad válida")
                             return@launch
                         }
