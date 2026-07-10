@@ -15,6 +15,7 @@ import com.example.gigmap_frontend_sprint1.model.RegisterRequest
 import com.example.gigmap_frontend_sprint1.model.RelatedEvent
 import com.example.gigmap_frontend_sprint1.model.RelatedEventCreateRequest
 import com.example.gigmap_frontend_sprint1.model.RelatedEventParticipantRequest
+import com.example.gigmap_frontend_sprint1.model.ArtistStats
 import com.example.gigmap_frontend_sprint1.model.UserEditRequest
 import com.example.gigmap_frontend_sprint1.model.Users
 import retrofit2.Response
@@ -146,4 +147,9 @@ interface WebService {
 
     @GET("api/v1/notifications/user/{userId}")
     suspend fun getAllNotificationsByUserId(@Path("userId") userId: Int) : Response<List<Notification>>
+
+    @GET("api/v1/artists/{artistId}/stats")
+    suspend fun getArtistStats(
+        @Path("artistId") artistId: Long
+    ): Response<ArtistStats>
 }

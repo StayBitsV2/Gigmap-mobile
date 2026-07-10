@@ -67,6 +67,15 @@ fun EditProfile(
     var uploadedUrl by remember { mutableStateOf<String?>(currentUser?.image ?: "") }
     var isUploadingImage by remember { mutableStateOf(false) }
 
+    // Nuevos campos del perfil ARTISTA
+    var bannerUrl by remember { mutableStateOf(currentUser?.bannerUrl ?: "") }
+    var selectedGenre by remember { mutableStateOf(currentUser?.generoMusical ?: "") }
+    var sitioWeb by remember { mutableStateOf(currentUser?.sitioWeb ?: "") }
+    var spotifyUrl by remember { mutableStateOf(currentUser?.spotifyUrl ?: "") }
+    var instagramUrl by remember { mutableStateOf(currentUser?.instagramUrl ?: "") }
+    var youtubeUrl by remember { mutableStateOf(currentUser?.youtubeUrl ?: "") }
+    var isUploadingBanner by remember { mutableStateOf(false) }
+
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
@@ -99,6 +108,38 @@ fun EditProfile(
                     snackbarHostState.showSnackbar("Error: ${e.message}")
                 } finally {
                     isUploadingImage = false
+                }
+            }
+        }
+    }
+
+    val bannerPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: android.net.Uri? ->
+        uri?.let {
+            isUploadingBanner = true
+            coroutineScope.launch {
+                try {
+                    val inputStream = context.contentResolver.openInputStream(it)
+                    val tempFile = File(context.cacheDir, "temp_banner_${System.currentTimeMillis()}.jpg")
+                    inputStream?.use { input -> FileOutputStream(tempFile).use { output -> input.copyTo(output) } }
+
+                    val url = withContext(Dispatchers.IO) {
+                        CloudinaryService.uploadImage(tempFile)
+                    }
+
+                    if (!url.isNullOrBlank()) {
+                        bannerUrl = url
+                        snackbarHostState.showSnackbar("✅ Portada subida correctamente")
+                    } else {
+                        snackbarHostState.showSnackbar("❌ Error al subir portada")
+                    }
+
+                    tempFile.delete()
+                } catch (e: Exception) {
+                    snackbarHostState.showSnackbar("Error: ${e.message}")
+                } finally {
+                    isUploadingBanner = false
                 }
             }
         }
@@ -151,6 +192,54 @@ fun EditProfile(
                     } else {
                         Text("Cambiar", color = Color.White, fontSize = 12.sp)
                     }
+                }
+            }
+
+            // Banner / Portada
+            Text(
+                text = "Portada",
+                modifier = Modifier.fillMaxWidth(),
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFFF5F5F5)),
+                contentAlignment = Alignment.Center
+            ) {
+                if (bannerUrl.isNotBlank()) {
+                    GlideImage(
+                        model = bannerUrl,
+                        contentDescription = "Banner",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Text(
+                        text = "Sin portada",
+                        color = Color.Gray,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Button(
+                onClick = { bannerPickerLauncher.launch("image/*") },
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5C0F1A)),
+                modifier = Modifier.height(36.dp)
+            ) {
+                if (isUploadingBanner) {
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                    Spacer(Modifier.width(6.dp))
+                    Text("Subiendo", color = Color.White, fontSize = 12.sp)
+                } else {
+                    Text("Cambiar portada", color = Color.White, fontSize = 12.sp)
                 }
             }
 
@@ -221,6 +310,148 @@ fun EditProfile(
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            // Campos exclusivos para ARTISTA
+            if (role == "ARTIST") {
+                // Género musical
+                Text(
+                    text = "Género musical",
+                    modifier = Modifier.fillMaxWidth(),
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+
+                var expanded by remember { mutableStateOf(false) }
+                val genres = listOf(
+                    "Rock", "Pop", "Electrónica", "Urbano", "Jazz", "Indie",
+                    "Clásico", "Metal", "Folk", "Country", "Reggae", "Blues",
+                    "Alternative", "Punk", "Soul", "Funk", "R&B", "Latin",
+                    "World", "Hip-Hop", "Other"
+                )
+
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded }
+                ) {
+                    OutlinedTextField(
+                        value = selectedGenre,
+                        onValueChange = {},
+                        readOnly = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(),
+                        shape = RoundedCornerShape(12.dp),
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF5C0F1A),
+                            unfocusedBorderColor = Color.Gray
+                        )
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        genres.forEach { genre ->
+                            DropdownMenuItem(
+                                text = { Text(genre) },
+                                onClick = {
+                                    selectedGenre = genre
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Sitio web
+                Text(
+                    text = "Sitio web",
+                    modifier = Modifier.fillMaxWidth(),
+                    fontWeight = FontWeight.SemiBold
+                )
+                OutlinedTextField(
+                    value = sitioWeb,
+                    onValueChange = { sitioWeb = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF5C0F1A),
+                        unfocusedBorderColor = Color.Gray
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Redes Sociales
+                Text(
+                    text = "Redes Sociales",
+                    modifier = Modifier.fillMaxWidth(),
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "Spotify",
+                    modifier = Modifier.fillMaxWidth(),
+                    fontWeight = FontWeight.SemiBold
+                )
+                OutlinedTextField(
+                    value = spotifyUrl,
+                    onValueChange = { spotifyUrl = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    placeholder = { Text("https://open.spotify.com/...") },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF5C0F1A),
+                        unfocusedBorderColor = Color.Gray
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Instagram",
+                    modifier = Modifier.fillMaxWidth(),
+                    fontWeight = FontWeight.SemiBold
+                )
+                OutlinedTextField(
+                    value = instagramUrl,
+                    onValueChange = { instagramUrl = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    placeholder = { Text("https://instagram.com/...") },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF5C0F1A),
+                        unfocusedBorderColor = Color.Gray
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "YouTube",
+                    modifier = Modifier.fillMaxWidth(),
+                    fontWeight = FontWeight.SemiBold
+                )
+                OutlinedTextField(
+                    value = youtubeUrl,
+                    onValueChange = { youtubeUrl = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    placeholder = { Text("https://youtube.com/@...") },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF5C0F1A),
+                        unfocusedBorderColor = Color.Gray
+                    )
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Botón Guardar
             Button(
@@ -241,7 +472,13 @@ fun EditProfile(
                         name = name,
                         role = role.ifBlank { null },
                         imagenUrl = uploadedUrl,
-                        descripcion = descripcion.ifBlank { null }
+                        descripcion = descripcion.ifBlank { null },
+                        bannerUrl = bannerUrl,
+                        generoMusical = selectedGenre,
+                        sitioWeb = sitioWeb,
+                        spotifyUrl = spotifyUrl,
+                        instagramUrl = instagramUrl,
+                        youtubeUrl = youtubeUrl
                     )
 
                     userVM.updateUser(currentUserId, request) { success, updatedUser ->

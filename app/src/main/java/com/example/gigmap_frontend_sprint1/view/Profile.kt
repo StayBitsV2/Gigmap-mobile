@@ -9,7 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
@@ -27,8 +27,10 @@ import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
+import com.example.gigmap_frontend_sprint1.model.ArtistStats
 import com.example.gigmap_frontend_sprint1.model.Concerts
 import com.example.gigmap_frontend_sprint1.model.Post
+import com.example.gigmap_frontend_sprint1.model.client.RetrofitClient
 import com.example.gigmap_frontend_sprint1.viewmodel.CommunityViewModel
 import com.example.gigmap_frontend_sprint1.viewmodel.ConcertViewModel
 import com.example.gigmap_frontend_sprint1.viewmodel.PostViewModel
@@ -63,9 +65,11 @@ fun Profile(
 
     val isArtist = remember(currentUser) { (currentUser?.role ?: "").uppercase() == "ARTIST" }
 
-    val tabOptions = remember(isArtist) {
-        if (isArtist) listOf("Conciertos", "Comunidades", "Likes")
-        else listOf("GigList", "Comunidades", "Likes")
+    val tabOptions = remember(isArtist, isOwner) {
+        if (isArtist) {
+            if (isOwner) listOf("Conciertos", "Comunidades", "Likes", "Estadísticas")
+            else listOf("Conciertos", "Comunidades", "Likes")
+        } else listOf("GigList", "Comunidades", "Likes")
     }
 
     var selectedTab by remember { mutableStateOf(0) }
@@ -77,6 +81,18 @@ fun Profile(
     val userById = remember(users) { users.associateBy { it.id } }
 
     var isFollowing by remember { mutableStateOf(false) }
+    var artistStats by remember { mutableStateOf<ArtistStats?>(null) }
+
+    LaunchedEffect(profileUserId, selectedTab) {
+        if (isArtist && isOwner && selectedTab == 3 && profileUserId != 0) {
+            try {
+                val response = RetrofitClient.webService.getArtistStats(profileUserId.toLong())
+                if (response.isSuccessful) {
+                    artistStats = response.body()
+                }
+            } catch (_: Exception) { }
+        }
+    }
 
     LaunchedEffect(Unit) {
         if (concertVM.listaConcerts.isEmpty()) {
@@ -194,7 +210,7 @@ fun Profile(
                 selectedTabIndex = selectedTab,
                 containerColor = Color.White,
                 indicator = { tabPositions ->
-                    TabRowDefaults.Indicator(
+                    TabRowDefaults.SecondaryIndicator(
                         Modifier
                             .tabIndicatorOffset(tabPositions[selectedTab])
                             .height(3.dp),
@@ -420,10 +436,52 @@ fun Profile(
                                         }
 
                                         Icon(
-                                            imageVector = Icons.Default.ArrowForward,
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                                             contentDescription = "Ver comunidad",
                                             tint = Color(0xFF5C0F1A)
                                         )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 3: Estadísticas (solo ARTIST own profile)
+                3 -> {
+                    if (artistStats == null) {
+                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = Color(0xFF5C0F1A))
+                        }
+                    } else {
+                        val stats = artistStats!!
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            contentPadding = PaddingValues(vertical = 8.dp)
+                        ) {
+                            items(stats.weeks) { week ->
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                ) {
+                                    Column(modifier = Modifier.padding(14.dp)) {
+                                        Text(
+                                            "${week.weekStart} - ${week.weekEnd}",
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF5C0F1A)
+                                        )
+                                        Spacer(Modifier.height(8.dp))
+                                        StatRow("Nuevos seguidores", week.newFollowers)
+                                        StatRow("Visitas al perfil", week.profileViews)
+                                        Spacer(Modifier.height(4.dp))
+                                        Text("Clics en enlaces:", fontSize = 13.sp, color = Color.Gray)
+                                        StatRow("  Spotify", week.externalLinkClicks.spotify)
+                                        StatRow("  Instagram", week.externalLinkClicks.instagram)
+                                        StatRow("  YouTube", week.externalLinkClicks.youtube)
                                     }
                                 }
                             }
@@ -488,6 +546,22 @@ fun Profile(
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.BottomCenter)
+        )
+    }
+}
+
+@Composable
+private fun StatRow(label: String, value: Long) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label, fontSize = 13.sp, color = Color.DarkGray)
+        Text(
+            value.toString(),
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Color(0xFF5C0F1A)
         )
     }
 }
