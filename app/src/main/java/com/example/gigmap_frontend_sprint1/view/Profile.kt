@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
@@ -27,7 +28,6 @@ import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
-import com.example.gigmap_frontend_sprint1.model.ArtistStats
 import com.example.gigmap_frontend_sprint1.model.Concerts
 import com.example.gigmap_frontend_sprint1.model.Post
 import com.example.gigmap_frontend_sprint1.model.client.RetrofitClient
@@ -66,10 +66,13 @@ fun Profile(
     val isArtist = remember(currentUser) { (currentUser?.role ?: "").uppercase() == "ARTIST" }
 
     val tabOptions = remember(isArtist, isOwner) {
-        if (isArtist) {
-            if (isOwner) listOf("Conciertos", "Comunidades", "Likes", "Estadísticas")
-            else listOf("Conciertos", "Comunidades", "Likes")
-        } else listOf("GigList", "Comunidades", "Likes")
+        if (isOwner) {
+            if (isArtist) listOf("Conciertos", "Comunidades", "Likes")
+            else listOf("Novedades", "GigList", "Comunidades", "Likes")
+        } else {
+            if (isArtist) listOf("Conciertos", "Comunidades", "Likes")
+            else listOf("GigList", "Comunidades", "Likes")
+        }
     }
 
     var selectedTab by remember { mutableStateOf(0) }
@@ -81,18 +84,6 @@ fun Profile(
     val userById = remember(users) { users.associateBy { it.id } }
 
     var isFollowing by remember { mutableStateOf(false) }
-    var artistStats by remember { mutableStateOf<ArtistStats?>(null) }
-
-    LaunchedEffect(profileUserId, selectedTab) {
-        if (isArtist && isOwner && selectedTab == 3 && profileUserId != 0) {
-            try {
-                val response = RetrofitClient.webService.getArtistStats(profileUserId.toLong())
-                if (response.isSuccessful) {
-                    artistStats = response.body()
-                }
-            } catch (_: Exception) { }
-        }
-    }
 
     LaunchedEffect(Unit) {
         if (concertVM.listaConcerts.isEmpty()) {
@@ -115,6 +106,16 @@ fun Profile(
 
             postVM.getPostsLikedByUser(profileUserId.toLong()) { result ->
                 result?.let { likedPosts = it }
+            }
+
+            if (!isOwner && isArtist && loggedUserId != 0) {
+                userVM.checkIsFollowing(loggedUserId, profileUserId) { following ->
+                    isFollowing = following
+                }
+            }
+
+            if (isOwner && !isArtist) {
+                userVM.loadFollowedArtists(loggedUserId)
             }
         } else {
             concertsByUser = emptyList()
@@ -190,15 +191,54 @@ fun Profile(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     if (isOwner) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Button(
+                                onClick = { innerNav.navigate("editProfile") },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5C0F1A)),
+                                shape = MaterialTheme.shapes.small
+                            ) {
+                                Text(text = "Editar perfil", color = Color.White)
+                            }
+                            if (isArtist) {
+                                IconButton(
+                                    onClick = { innerNav.navigate("artistStats") }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.BarChart,
+                                        contentDescription = "Estadísticas",
+                                        tint = Color(0xFF5C0F1A)
+                                    )
+                                }
+                            }
+                        }
+                    } else if (isArtist) {
                         Button(
-                            onClick = { innerNav.navigate("editProfile") },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5C0F1A)),
+                            onClick = {
+                                coroutineScope.launch {
+                                    if (isFollowing) {
+                                        userVM.unfollowArtist(loggedUserId, profileUserId) { success ->
+                                            if (success) isFollowing = false
+                                        }
+                                    } else {
+                                        userVM.followArtist(loggedUserId, profileUserId) { success ->
+                                            if (success) isFollowing = true
+                                        }
+                                    }
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isFollowing) Color(0xFFE0E0E0) else Color(0xFF5C0F1A)
+                            ),
                             shape = MaterialTheme.shapes.small
                         ) {
-                            Text(text = "Editar perfil", color = Color.White)
+                            Text(
+                                text = if (isFollowing) "Siguiendo" else "Seguir",
+                                color = if (isFollowing) Color.Black else Color.White
+                            )
                         }
-                    } else {
-                        
                     }
                 }
             }
@@ -235,9 +275,72 @@ fun Profile(
             Spacer(modifier = Modifier.height(12.dp))
 
             // CONTENIDO
-            when (selectedTab) {
-                // 0: Conciertos (ARTIST) / GigList (FAN)
-                0 -> {
+            when {
+                // 0: Novedades (FAN own) / Conciertos (ARTIST) / GigList (FAN other)
+                selectedTab == 0 && isOwner && !isArtist -> {
+                    val followedArtistsList = userVM.followedArtists
+                    if (followedArtistsList.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "No sigues a ningún artista todavía. ¡Explora y sigue a tus artistas favoritos!",
+                                color = Color.Gray
+                            )
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            contentPadding = PaddingValues(vertical = 8.dp)
+                        ) {
+                            items(followedArtistsList) { artist ->
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            innerNav.navigate("user/${artist.id}")
+                                        },
+                                    shape = RoundedCornerShape(16.dp),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        AsyncImage(
+                                            model = artist.image.ifBlank { null },
+                                            contentDescription = artist.name,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier
+                                                .size(56.dp)
+                                                .clip(CircleShape)
+                                                .background(Color(0xFFEDEDED), CircleShape)
+                                        )
+                                        Spacer(Modifier.width(12.dp))
+                                        Column {
+                                            Text(
+                                                text = artist.name ?: artist.username,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFF5C0F1A),
+                                                fontSize = 15.sp
+                                            )
+                                            Text(
+                                                text = "@${artist.username}",
+                                                color = Color.Gray,
+                                                fontSize = 13.sp
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                // 0: Conciertos (ARTIST) / GigList (FAN other)
+                selectedTab == 0 -> {
                     if (isArtist) {
                         if (concertsByUser.isEmpty()) {
                             Box(
@@ -322,7 +425,6 @@ fun Profile(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .clickable {
-                                                //  No navegamos directo, avisamos al Home
                                                 concert.id?.let { id ->
                                                     onOpenConcertFromProfile(id)
                                                 }
@@ -370,8 +472,76 @@ fun Profile(
                     }
                 }
 
+                // 1: GigList (FAN own) / Comunidades (everyone else)
+                selectedTab == 1 && isOwner && !isArtist -> {
+                    if (gigList.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "Aún no has confirmado asistencia a ningún concierto",
+                                color = Color.Gray
+                            )
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            contentPadding = PaddingValues(vertical = 8.dp)
+                        ) {
+                            items(gigList) { concert ->
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            concert.id?.let { id ->
+                                                onOpenConcertFromProfile(id)
+                                            }
+                                        },
+                                    shape = RoundedCornerShape(16.dp),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                                ) {
+                                    Column {
+                                        GlideImage(
+                                            model = concert.image,
+                                            contentDescription = concert.name,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(160.dp),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                        Column(Modifier.padding(12.dp)) {
+                                            Text(
+                                                text = concert.name ?: "Concierto",
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFF5C0F1A),
+                                                fontSize = 16.sp
+                                            )
+                                            Spacer(Modifier.height(4.dp))
+                                            Text(
+                                                text = concert.venue?.name ?: "",
+                                                color = Color(0xFF736D6D),
+                                                fontSize = 14.sp
+                                            )
+                                            Spacer(Modifier.height(2.dp))
+                                            Text(
+                                                text = (concert.date ?: "")
+                                                    .take(10)
+                                                    .replace("-", "/"),
+                                                color = Color.Gray,
+                                                fontSize = 13.sp
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 // 1: Comunidades
-                1 -> {
+                selectedTab == 1 -> {
                     if (joinedCommunities.isEmpty()) {
                         Box(
                             modifier = Modifier.fillMaxWidth(),
@@ -393,10 +563,7 @@ fun Profile(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable {
-
-                                                onOpenCommunityFromProfile(community.id)
-
-
+                                            onOpenCommunityFromProfile(community.id)
                                         },
                                     shape = RoundedCornerShape(14.dp),
                                     colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -447,50 +614,8 @@ fun Profile(
                     }
                 }
 
-                // 3: Estadísticas (solo ARTIST own profile)
-                3 -> {
-                    if (artistStats == null) {
-                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = Color(0xFF5C0F1A))
-                        }
-                    } else {
-                        val stats = artistStats!!
-                        LazyColumn(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                            contentPadding = PaddingValues(vertical = 8.dp)
-                        ) {
-                            items(stats.weeks) { week ->
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                                ) {
-                                    Column(modifier = Modifier.padding(14.dp)) {
-                                        Text(
-                                            "${week.weekStart} - ${week.weekEnd}",
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF5C0F1A)
-                                        )
-                                        Spacer(Modifier.height(8.dp))
-                                        StatRow("Nuevos seguidores", week.newFollowers)
-                                        StatRow("Visitas al perfil", week.profileViews)
-                                        Spacer(Modifier.height(4.dp))
-                                        Text("Clics en enlaces:", fontSize = 13.sp, color = Color.Gray)
-                                        StatRow("  Spotify", week.externalLinkClicks.spotify)
-                                        StatRow("  Instagram", week.externalLinkClicks.instagram)
-                                        StatRow("  YouTube", week.externalLinkClicks.youtube)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // 2: Likes
-                2 -> {
+                // 3: Likes (FAN own)
+                selectedTab == 3 -> {
                     if (likedPosts.isEmpty()) {
                         Box(
                             modifier = Modifier.fillMaxWidth(),
@@ -516,6 +641,110 @@ fun Profile(
                                     currentUserId = loggedUserId,
                                     onClick = { }
                                 )
+                            }
+                        }
+                    }
+                }
+
+                // 2: Likes (everyone except FAN own) or Comunidades (FAN own)
+                selectedTab == 2 -> {
+                    if (isOwner && !isArtist) {
+                        // FAN own: Comunidades
+                        if (joinedCommunities.isEmpty()) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    "Todavía no te has unido a ninguna comunidad",
+                                    color = Color.Gray
+                                )
+                            }
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                                contentPadding = PaddingValues(vertical = 8.dp)
+                            ) {
+                                items(joinedCommunities) { community ->
+                                    Card(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                onOpenCommunityFromProfile(community.id)
+                                            },
+                                        shape = RoundedCornerShape(14.dp),
+                                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                                        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(12.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            GlideImage(
+                                                model = community.image,
+                                                contentDescription = community.name,
+                                                modifier = Modifier
+                                                    .size(56.dp)
+                                                    .clip(RoundedCornerShape(10.dp)),
+                                                contentScale = ContentScale.Crop
+                                            )
+                                            Spacer(modifier = Modifier.width(10.dp))
+                                            Column(
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                Text(
+                                                    text = community.name,
+                                                    fontSize = 15.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color(0xFF111111)
+                                                )
+                                                Spacer(modifier = Modifier.height(2.dp))
+                                                Text(
+                                                    text = community.description,
+                                                    fontSize = 12.sp,
+                                                    color = Color(0xFF666666),
+                                                    maxLines = 2
+                                                )
+                                            }
+                                            Icon(
+                                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                                contentDescription = "Ver comunidad",
+                                                tint = Color(0xFF5C0F1A)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // Everyone else: Likes
+                        if (likedPosts.isEmpty()) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("No hay publicaciones en Likes", color = Color.Gray)
+                            }
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                                contentPadding = PaddingValues(vertical = 8.dp)
+                            ) {
+                                items(likedPosts) { post ->
+                                    val author = userById[post.userId]
+                                    PostCard(
+                                        nav = innerNav,
+                                        post = post,
+                                        authorId = author?.id,
+                                        authorName = author?.name,
+                                        authorImage = author?.image,
+                                        postVm = postVM,
+                                        currentUserId = loggedUserId,
+                                        onClick = { }
+                                    )
+                                }
                             }
                         }
                     }

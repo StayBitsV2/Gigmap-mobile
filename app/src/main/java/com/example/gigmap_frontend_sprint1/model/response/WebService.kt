@@ -152,4 +152,27 @@ interface WebService {
     suspend fun getArtistStats(
         @Path("artistId") artistId: Long
     ): Response<ArtistStats>
+
+    @PUT("api/v1/users/{userId}/follow/{artistId}")
+    suspend fun followArtist(
+        @Path("userId") userId: Long,
+        @Path("artistId") artistId: Long
+    ): Response<Void>
+
+    @PUT("api/v1/users/{userId}/unfollow/{artistId}")
+    suspend fun unfollowArtist(
+        @Path("userId") userId: Long,
+        @Path("artistId") artistId: Long
+    ): Response<Void>
+
+    @GET("api/v1/users/{userId}/following/{artistId}")
+    suspend fun isFollowingArtist(
+        @Path("userId") userId: Long,
+        @Path("artistId") artistId: Long
+    ): Response<Boolean>
+
+    @GET("api/v1/users/{userId}/following")
+    suspend fun getFollowedArtists(
+        @Path("userId") userId: Long
+    ): Response<List<Users>>
 }

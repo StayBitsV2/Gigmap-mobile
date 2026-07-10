@@ -263,6 +263,80 @@ class UserViewModel : ViewModel() {
         }
     }
 
+    var followedArtistIds by mutableStateOf(setOf<Int>())
+
+    fun checkIsFollowing(fanId: Int, artistId: Int, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val response = RetrofitClient.webService.isFollowingArtist(fanId.toLong(), artistId.toLong())
+                withContext(Dispatchers.Main) {
+                    if (response.isSuccessful && response.body() != null) {
+                        onResult(response.body()!!)
+                    } else {
+                        onResult(false)
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) { onResult(false) }
+            }
+        }
+    }
+
+    fun followArtist(fanId: Int, artistId: Int, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val response = RetrofitClient.webService.followArtist(fanId.toLong(), artistId.toLong())
+                withContext(Dispatchers.Main) {
+                    if (response.isSuccessful) {
+                        followedArtistIds = followedArtistIds + artistId
+                        onResult(true)
+                    } else {
+                        onResult(false)
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) { onResult(false) }
+            }
+        }
+    }
+
+    fun unfollowArtist(fanId: Int, artistId: Int, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val response = RetrofitClient.webService.unfollowArtist(fanId.toLong(), artistId.toLong())
+                withContext(Dispatchers.Main) {
+                    if (response.isSuccessful) {
+                        followedArtistIds = followedArtistIds - artistId
+                        onResult(true)
+                    } else {
+                        onResult(false)
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) { onResult(false) }
+            }
+        }
+    }
+
+    var followedArtists by mutableStateOf<List<Users>>(emptyList())
+
+    fun loadFollowedArtists(userId: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val response = RetrofitClient.webService.getFollowedArtists(userId.toLong())
+                withContext(Dispatchers.Main) {
+                    if (response.isSuccessful && response.body() != null) {
+                        val artists = response.body()!!
+                        followedArtists = artists
+                        followedArtistIds = artists.map { it.id }.toSet()
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) { }
+            }
+        }
+    }
+
 
 
 

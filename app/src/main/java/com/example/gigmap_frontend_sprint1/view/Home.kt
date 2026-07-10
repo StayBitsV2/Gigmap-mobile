@@ -327,6 +327,12 @@ fun Home(nav: NavHostController) {
                             )
                         }
 
+                        composable("artistStats") {
+                            ArtistStatsView(
+                                userId = userVM.currentUserId
+                            )
+                        }
+
                         composable("editProfile") {
                             EditProfile(
                                 nav = internalNav,
