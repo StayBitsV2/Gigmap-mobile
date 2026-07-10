@@ -24,6 +24,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 
@@ -31,6 +32,7 @@ import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.example.gigmap_frontend_sprint1.model.Post
 import com.example.gigmap_frontend_sprint1.viewmodel.CommunityViewModel
+import com.example.gigmap_frontend_sprint1.viewmodel.ForumViewModel
 import com.example.gigmap_frontend_sprint1.viewmodel.PostViewModel
 import com.example.gigmap_frontend_sprint1.viewmodel.UserViewModel
 
@@ -42,24 +44,39 @@ fun Community(
     communityId: Int,
     communityVm: CommunityViewModel = viewModel(),
     postVm: PostViewModel = viewModel(),
-    userVm: UserViewModel = viewModel()
+    userVm: UserViewModel = viewModel(),
+    forumVm: ForumViewModel = viewModel()
 ) {
     val context = LocalContext.current
+    var selectedTab by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(communityId) {
         communityVm.getCommunities()
         postVm.getPosts()
         userVm.getUsers()
+        forumVm.getForumThreads(communityId)
+    }
+
+    LaunchedEffect(selectedTab, communityId) {
+        if (selectedTab == 1) {
+            forumVm.getForumThreads(communityId)
+        }
     }
 
     val community = communityVm.listaCommunities.find { it.id == communityId }
     val allPosts = postVm.listaPosts
+    val allThreads = forumVm.threads
     val users = userVm.listaUsers
     val userById = remember(users) { users.associateBy { it.id } }
 
     val fanPosts = remember(allPosts, community) {
         if (community == null) emptyList()
         else allPosts.filter { it.communityId == community.id }
+    }
+
+    val fanThreads = remember(allThreads, community) {
+        if (community == null) emptyList()
+        else allThreads.filter { it.communityId == community.id }
     }
 
     if (community == null) {
@@ -70,6 +87,7 @@ fun Community(
     }
 
     var isJoined by remember { mutableStateOf(false) }
+    var showCreateMenu by remember { mutableStateOf(false) }
 
     LaunchedEffect(community, userVm.currentUserId) {
         val uid = userVm.currentUserId
@@ -197,69 +215,185 @@ fun Community(
                 )
             }
 
-            FloatingActionButton(
-                onClick = { navController.navigate("createPost/${communityId}") },
-                containerColor = Color(0xFF5C0F1A),
-                contentColor = Color.White,
+            Box(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(16.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Crear Post")
+                FloatingActionButton(
+                    onClick = { showCreateMenu = true },
+                    containerColor = Color(0xFF5C0F1A),
+                    contentColor = Color.White
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Crear")
+                }
+                DropdownMenu(
+                    expanded = showCreateMenu,
+                    onDismissRequest = { showCreateMenu = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Publicación") },
+                        onClick = {
+                            showCreateMenu = false
+                            navController.navigate("createPost/${communityId}")
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Hilo") },
+                        onClick = {
+                            showCreateMenu = false
+                            navController.navigate("createThread/${communityId}")
+                        }
+                    )
+                }
             }
         }
 
         // TAB
         TabRow(
-            selectedTabIndex = 0,
+            selectedTabIndex = selectedTab,
             containerColor = Color.White,
             indicator = { tabPositions ->
-                TabRowDefaults.Indicator(
+                TabRowDefaults.SecondaryIndicator(
                     Modifier
-                        .tabIndicatorOffset(tabPositions[0])
+                        .tabIndicatorOffset(tabPositions[selectedTab])
                         .height(3.dp),
                     color = Color(0xFF5C0F1A)
                 )
             }
         ) {
             Tab(
-                selected = true,
-                onClick = {},
+                selected = selectedTab == 0,
+                onClick = { selectedTab = 0 },
                 text = {
-                    Text("Posts", color = Color(0xFF5C0F1A))
+                    Text(
+                        "Publicaciones",
+                        color = if (selectedTab == 0) Color(0xFF5C0F1A) else Color.Gray,
+                        fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal
+                    )
+                }
+            )
+            Tab(
+                selected = selectedTab == 1,
+                onClick = { selectedTab = 1 },
+                text = {
+                    Text(
+                        "Hilos",
+                        color = if (selectedTab == 1) Color(0xFF5C0F1A) else Color.Gray,
+                        fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal
+                    )
                 }
             )
         }
 
-        if (fanPosts.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-                Text(
-                    text = "Aún no hay publicaciones.",
-                    modifier = Modifier.padding(20.dp),
-                    color = Color.Gray
-                )
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(fanPosts, key = { it.id }) { post ->
-                    val author = userById[post.userId]
-                    PostCard(
-                        nav = navController,
-                        post = post,
-                        authorId = author?.id,
-                        authorName = author?.name,
-                        authorImage = author?.image,
-                        postVm = postVm,
-                        currentUserId = userVm.currentUserId,
-                        onClick = {}
+        if (selectedTab == 0) {
+            if (fanPosts.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                    Text(
+                        text = "Aún no hay publicaciones.",
+                        modifier = Modifier.padding(20.dp),
+                        color = Color.Gray
                     )
                 }
-                item { Spacer(modifier = Modifier.height(20.dp)) }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(fanPosts, key = { it.id }) { post ->
+                        val author = userById[post.userId]
+                        PostCard(
+                            nav = navController,
+                            post = post,
+                            authorId = author?.id,
+                            authorName = author?.name,
+                            authorImage = author?.image,
+                            postVm = postVm,
+                            currentUserId = userVm.currentUserId,
+                            onClick = {}
+                        )
+                    }
+                    item { Spacer(modifier = Modifier.height(20.dp)) }
+                }
+            }
+        } else {
+            if (fanThreads.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                    Text(
+                        text = "Aún no hay hilos.",
+                        modifier = Modifier.padding(20.dp),
+                        color = Color.Gray
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(fanThreads, key = { it.id }) { thread ->
+                        val author = userById[thread.userId]
+                        ThreadCard(
+                            nav = navController,
+                            thread = thread,
+                            authorName = author?.name
+                        )
+                    }
+                    item { Spacer(modifier = Modifier.height(20.dp)) }
+                }
+            }
+        }
+
+    }
+}
+
+@Composable
+fun ThreadCard(
+    nav: NavHostController,
+    thread: Post,
+    authorName: String? = null
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { nav.navigate("threadDetail/${thread.id}") },
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = thread.title ?: "Sin título",
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = thread.content,
+                fontSize = 14.sp,
+                color = Color.Gray,
+                maxLines = 2,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = authorName ?: "Usuario #${thread.userId}",
+                    fontSize = 12.sp,
+                    color = Color(0xFF5C0F1A)
+                )
+                Text(
+                    text = "${thread.commentCount ?: 0} comentarios",
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
             }
         }
     }

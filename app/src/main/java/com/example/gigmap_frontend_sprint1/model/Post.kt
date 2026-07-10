@@ -6,5 +6,7 @@ data class Post(
     val userId: Int,
     val content: String,
     val image: String?,
-    val likes: List<Int> = emptyList()
+    val likes: List<Int> = emptyList(),
+    val commentCount: Int? = 0,
+    val title: String? = null
 )

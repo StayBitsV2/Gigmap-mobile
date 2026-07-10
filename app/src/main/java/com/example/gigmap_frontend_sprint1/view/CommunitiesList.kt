@@ -121,7 +121,6 @@ fun CommunitiesList(nav: NavHostController, viewModel: CommunityViewModel = view
 
         Spacer(modifier = Modifier.height(12.dp))
 
-
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },

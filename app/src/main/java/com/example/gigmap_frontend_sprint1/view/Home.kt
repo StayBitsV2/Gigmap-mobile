@@ -23,6 +23,7 @@ import com.example.gigmap_frontend_sprint1.components.TopBar
 import com.example.gigmap_frontend_sprint1.viewmodel.CommunityViewModel
 import com.example.gigmap_frontend_sprint1.viewmodel.ConcertViewModel
 import com.example.gigmap_frontend_sprint1.viewmodel.ConnectionViewModel
+import com.example.gigmap_frontend_sprint1.viewmodel.ForumViewModel
 import com.example.gigmap_frontend_sprint1.viewmodel.NotificationViewModel
 import com.example.gigmap_frontend_sprint1.viewmodel.PostViewModel
 import com.example.gigmap_frontend_sprint1.viewmodel.UserViewModel
@@ -39,6 +40,7 @@ fun Home(nav: NavHostController) {
     val communityVm: CommunityViewModel = viewModel()
     val connectionVm: ConnectionViewModel = viewModel()
     val notificationVm: NotificationViewModel = viewModel()
+    val forumVm: ForumViewModel = viewModel()
     val context = LocalContext.current
     val navBackStackEntry by internalNav.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -190,7 +192,8 @@ fun Home(nav: NavHostController) {
                                 communityId = communityId,
                                 userVm = userVM,
                                 postVm = postVM,
-                                communityVm = communityVm
+                                communityVm = communityVm,
+                                forumVm = forumVm
                             )
                         }
 
@@ -201,7 +204,7 @@ fun Home(nav: NavHostController) {
                 }
 
                 // ---------- TAB 1: MAPA ----------
-                1 -> Map(nav)
+                1 -> Map(internalNav, userVM)
 
                 // ---------- TAB 2: COMMUNITIES ----------
                 2 -> {
@@ -219,7 +222,7 @@ fun Home(nav: NavHostController) {
                         startDestination = "communitiesList"
                     ) {
                         composable("communitiesList") {
-                            CommunitiesList(nav = internalNav)
+                            CommunitiesList(nav = internalNav, viewModel = communityVm)
                         }
 
                         composable(
@@ -262,7 +265,8 @@ fun Home(nav: NavHostController) {
                                 communityId = communityId,
                                 userVm = userVM,
                                 postVm = postVM,
-                                communityVm = communityVm
+                                communityVm = communityVm,
+                                forumVm = forumVm
                             )
                         }
 
@@ -282,6 +286,49 @@ fun Home(nav: NavHostController) {
                                 navController = internalNav,
                                 communityId = communityId,
                                 postVM = postVM,
+                                userVM = userVM
+                            )
+                        }
+
+                        composable("forumsList") {
+                            ForumsList(nav = internalNav, forumVM = forumVm)
+                        }
+
+                        composable(
+                            route = "threadsList/{forumId}",
+                            arguments = listOf(navArgument("forumId") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            val forumId = backStackEntry.arguments?.getInt("forumId") ?: 0
+                            ThreadsList(
+                                nav = internalNav,
+                                forumId = forumId,
+                                forumVM = forumVm,
+                                userVM = userVM
+                            )
+                        }
+
+                        composable(
+                            route = "threadDetail/{threadId}",
+                            arguments = listOf(navArgument("threadId") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            val threadId = backStackEntry.arguments?.getInt("threadId") ?: 0
+                            ThreadDetail(
+                                navController = internalNav,
+                                threadId = threadId,
+                                forumVM = forumVm,
+                                userVM = userVM
+                            )
+                        }
+
+                        composable(
+                            route = "createThread/{forumId}",
+                            arguments = listOf(navArgument("forumId") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            val forumId = backStackEntry.arguments?.getInt("forumId") ?: 0
+                            CreateThread(
+                                navController = internalNav,
+                                forumId = forumId,
+                                forumVM = forumVm,
                                 userVM = userVM
                             )
                         }
@@ -354,7 +401,8 @@ fun Home(nav: NavHostController) {
                                 communityId = communityId,
                                 userVm = userVM,
                                 postVm = postVM,
-                                communityVm = communityVm
+                                communityVm = communityVm,
+                                forumVm = forumVm
                             )
                         }
 

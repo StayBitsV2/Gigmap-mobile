@@ -11,7 +11,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.HourglassEmpty
+import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
@@ -254,14 +258,15 @@ fun Profile(
                                     )
                                 }
                             }
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(
-                            onClick = { innerNav.navigate("connections/$loggedUserId") },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5C0F1A)),
-                            shape = MaterialTheme.shapes.small
-                        ) {
-                            Text(text = "Conexiones", color = Color.White)
+                            IconButton(
+                                onClick = { innerNav.navigate("connections/$loggedUserId") }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.People,
+                                    contentDescription = "Conexiones",
+                                    tint = Color(0xFF5C0F1A)
+                                )
+                            }
                         }
                     } else {
                         Row(
@@ -298,51 +303,53 @@ fun Profile(
                             if (connectionChecked) {
                                 when (connectionStatus) {
                                     "connected" -> {
-                                        Button(
-                                            onClick = { },
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
-                                            shape = MaterialTheme.shapes.small,
-                                            enabled = false
-                                        ) {
-                                            Text(text = "Conectados", color = Color.White)
+                                        IconButton(onClick = { }, enabled = false) {
+                                            Icon(
+                                                imageVector = Icons.Default.CheckCircle,
+                                                contentDescription = "Conectados",
+                                                tint = Color(0xFF4CAF50)
+                                            )
                                         }
                                     }
                                     "outgoing" -> {
-                                        Button(
-                                            onClick = { },
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0E0E0)),
-                                            shape = MaterialTheme.shapes.small,
-                                            enabled = false
-                                        ) {
-                                            Text(text = "Solicitud enviada", color = Color.Black)
+                                        IconButton(onClick = { }, enabled = false) {
+                                            Icon(
+                                                imageVector = Icons.Default.HourglassEmpty,
+                                                contentDescription = "Solicitud enviada",
+                                                tint = Color.Gray
+                                            )
                                         }
                                     }
                                     "incoming" -> {
-                                        Button(
+                                        IconButton(
                                             onClick = {
                                                 pendingRequestId?.let { reqId ->
                                                     connectionVM.acceptRequest(reqId) { success ->
                                                         if (success) connectionStatus = "connected"
                                                     }
                                                 }
-                                            },
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5C0F1A)),
-                                            shape = MaterialTheme.shapes.small
+                                            }
                                         ) {
-                                            Text(text = "Aceptar solicitud", color = Color.White)
+                                            Icon(
+                                                imageVector = Icons.Default.PersonAdd,
+                                                contentDescription = "Aceptar solicitud",
+                                                tint = Color(0xFF5C0F1A)
+                                            )
                                         }
                                     }
                                     else -> {
-                                        Button(
+                                        IconButton(
                                             onClick = {
                                                 connectionVM.sendConnectionRequest(profileUserId.toLong()) { success ->
                                                     if (success) connectionStatus = "outgoing"
                                                 }
-                                            },
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5C0F1A)),
-                                            shape = MaterialTheme.shapes.small
+                                            }
                                         ) {
-                                            Text(text = "Conectar", color = Color.White)
+                                            Icon(
+                                                imageVector = Icons.Default.PersonAdd,
+                                                contentDescription = "Conectar",
+                                                tint = Color(0xFF5C0F1A)
+                                            )
                                         }
                                     }
                                 }

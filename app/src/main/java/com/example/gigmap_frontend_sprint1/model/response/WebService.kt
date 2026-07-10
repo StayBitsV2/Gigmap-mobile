@@ -1,11 +1,18 @@
 package com.example.gigmap_frontend_sprint1.model.response
 
 import com.example.gigmap_frontend_sprint1.model.AttendeeRequest
+import com.example.gigmap_frontend_sprint1.model.CreateAnalyticsEventRequest
+import com.example.gigmap_frontend_sprint1.model.Comment
 import com.example.gigmap_frontend_sprint1.model.Community
 import com.example.gigmap_frontend_sprint1.model.ConcertCreateRequest
 import com.example.gigmap_frontend_sprint1.model.ConnectionRequestResource
 import com.example.gigmap_frontend_sprint1.model.ConnectionResource
+import com.example.gigmap_frontend_sprint1.model.CreateCommentRequest
 import com.example.gigmap_frontend_sprint1.model.CreateConnectionRequest
+import com.example.gigmap_frontend_sprint1.model.CreateReactionRequest
+import com.example.gigmap_frontend_sprint1.model.CreateReportRequest
+import com.example.gigmap_frontend_sprint1.model.CreateThreadRequest
+import com.example.gigmap_frontend_sprint1.model.ForumDetail
 import com.example.gigmap_frontend_sprint1.model.Notification
 import com.example.gigmap_frontend_sprint1.model.Concerts
 import com.example.gigmap_frontend_sprint1.model.CreateDeviceTokenRequest
@@ -13,10 +20,12 @@ import com.example.gigmap_frontend_sprint1.model.LoginRequest
 import com.example.gigmap_frontend_sprint1.model.LoginResponse
 import com.example.gigmap_frontend_sprint1.model.Post
 import com.example.gigmap_frontend_sprint1.model.PostCreateRequest
+import com.example.gigmap_frontend_sprint1.model.Reaction
 import com.example.gigmap_frontend_sprint1.model.RegisterRequest
 import com.example.gigmap_frontend_sprint1.model.RelatedEvent
 import com.example.gigmap_frontend_sprint1.model.RelatedEventCreateRequest
 import com.example.gigmap_frontend_sprint1.model.RelatedEventParticipantRequest
+import com.example.gigmap_frontend_sprint1.model.Report
 import com.example.gigmap_frontend_sprint1.model.ArtistStats
 import com.example.gigmap_frontend_sprint1.model.UserEditRequest
 import com.example.gigmap_frontend_sprint1.model.Users
@@ -202,4 +211,42 @@ interface WebService {
 
     @GET("api/v1/connections/check")
     suspend fun checkConnection(@Query("userId1") userId1: Long, @Query("userId2") userId2: Long): Response<Boolean>
+
+    // ── Forums (US40) ───────────────────────────────────────────
+    @GET("api/v1/forums")
+    suspend fun getForums(): Response<List<Community>>
+
+    @GET("api/v1/forums/{forumId}/threads")
+    suspend fun getForumThreads(@Path("forumId") forumId: Int): Response<List<Post>>
+
+    @GET("api/v1/forums/threads/{threadId}")
+    suspend fun getThreadDetail(@Path("threadId") threadId: Int): Response<ForumDetail>
+
+    @POST("api/v1/forums/{forumId}/threads")
+    suspend fun createThread(@Path("forumId") forumId: Int, @Body request: CreateThreadRequest): Response<Post>
+
+    @POST("api/v1/forums/threads/{threadId}/comments")
+    suspend fun createComment(@Path("threadId") threadId: Int, @Body request: CreateCommentRequest): Response<Comment>
+
+    @POST("api/v1/forums/threads/{threadId}/reactions")
+    suspend fun addReaction(@Path("threadId") threadId: Int, @Body request: CreateReactionRequest): Response<Reaction>
+
+    @DELETE("api/v1/forums/threads/{threadId}/reactions/{reactionId}")
+    suspend fun removeThreadReaction(@Path("threadId") threadId: Int, @Path("reactionId") reactionId: Int): Response<Void>
+
+    @POST("api/v1/forums/threads/{threadId}/reports")
+    suspend fun reportThread(@Path("threadId") threadId: Int, @Body request: CreateReportRequest): Response<Report>
+
+    @POST("api/v1/forums/comments/{commentId}/reactions")
+    suspend fun addCommentReaction(@Path("commentId") commentId: Int, @Body request: CreateReactionRequest): Response<Reaction>
+
+    @DELETE("api/v1/forums/comments/{commentId}/reactions/{reactionId}")
+    suspend fun removeCommentReaction(@Path("commentId") commentId: Int, @Path("reactionId") reactionId: Int): Response<Void>
+
+    @POST("api/v1/forums/comments/{commentId}/reports")
+    suspend fun reportComment(@Path("commentId") commentId: Int, @Body request: CreateReportRequest): Response<Report>
+
+    // ── Analytics ───────────────────────────────────────────────
+    @POST("api/v1/analytics/events")
+    suspend fun createAnalyticsEvent(@Body request: CreateAnalyticsEventRequest): Response<Unit>
 }

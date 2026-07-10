@@ -56,11 +56,23 @@ fun ConcertDetails(
     userVM: UserViewModel = viewModel(),
     relatedEventVM: RelatedEventViewModel = viewModel()
 ) {
-    val concert = concertVM.listaConcerts.find { it.id == concertId }
+    var concertState by remember { mutableStateOf<Concerts?>(concertVM.listaConcerts.find { it.id == concertId }) }
+
+    val listSize = concertVM.listaConcerts.size
+    LaunchedEffect(concertId, listSize) {
+        val found = concertVM.listaConcerts.find { it.id == concertId }
+        if (found != null) {
+            concertState = found
+        } else if (concertState == null) {
+            concertVM.getConcertById(concertId) { result ->
+                if (result != null) concertState = result
+            }
+        }
+    }
 
     var showCreateRelatedDialog by remember { mutableStateOf(false) }
 
-    if (concert == null) {
+    val concert = concertState ?: run {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
