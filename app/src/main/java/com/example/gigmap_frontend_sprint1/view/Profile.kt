@@ -31,8 +31,10 @@ import com.bumptech.glide.integration.compose.GlideImage
 import com.example.gigmap_frontend_sprint1.model.Concerts
 import com.example.gigmap_frontend_sprint1.model.Post
 import com.example.gigmap_frontend_sprint1.model.client.RetrofitClient
+import com.example.gigmap_frontend_sprint1.model.ConnectionRequestResource
 import com.example.gigmap_frontend_sprint1.viewmodel.CommunityViewModel
 import com.example.gigmap_frontend_sprint1.viewmodel.ConcertViewModel
+import com.example.gigmap_frontend_sprint1.viewmodel.ConnectionViewModel
 import com.example.gigmap_frontend_sprint1.viewmodel.PostViewModel
 import com.example.gigmap_frontend_sprint1.viewmodel.UserViewModel
 import kotlinx.coroutines.launch
@@ -47,6 +49,7 @@ fun Profile(
     concertVM: ConcertViewModel = viewModel(),
     postVM: PostViewModel = viewModel(),
     communityVM: CommunityViewModel = viewModel(),
+    connectionVM: ConnectionViewModel = viewModel(),
     context: Context,
     onOpenConcertFromProfile: (Int) -> Unit = {},
     onOpenCommunityFromProfile: (Int) -> Unit = {},
@@ -85,6 +88,11 @@ fun Profile(
 
     var isFollowing by remember { mutableStateOf(false) }
 
+    // Connection states
+    var connectionStatus by remember { mutableStateOf("") } // "" | "connected" | "outgoing" | "incoming"
+    var pendingRequestId by remember { mutableStateOf<Long?>(null) }
+    var connectionChecked by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         if (concertVM.listaConcerts.isEmpty()) {
             concertVM.getConcerts()
@@ -111,6 +119,39 @@ fun Profile(
             if (!isOwner && isArtist && loggedUserId != 0) {
                 userVM.checkIsFollowing(loggedUserId, profileUserId) { following ->
                     isFollowing = following
+                }
+            }
+
+            // Connection checks (non-owner, non-artist too)
+            if (!isOwner && loggedUserId != 0) {
+                connectionChecked = false
+                connectionStatus = ""
+                pendingRequestId = null
+                connectionVM.checkConnection(loggedUserId.toLong(), profileUserId.toLong()) { connected ->
+                    if (connected) {
+                        connectionStatus = "connected"
+                        connectionChecked = true
+                    } else {
+                        connectionVM.getOutgoingRequests(loggedUserId.toLong()) { outgoing ->
+                            val pending = outgoing.find { it.targetId == profileUserId.toLong() && it.status == "PENDING" }
+                            if (pending != null) {
+                                connectionStatus = "outgoing"
+                                connectionChecked = true
+                            } else {
+                                connectionVM.getIncomingRequests(loggedUserId.toLong()) { incoming ->
+                                    val pendingIn = incoming.find { it.requesterId == profileUserId.toLong() && it.status == "PENDING" }
+                                    if (pendingIn != null) {
+                                        connectionStatus = "incoming"
+                                        pendingRequestId = pendingIn.id
+                                        connectionChecked = true
+                                    } else {
+                                        connectionStatus = ""
+                                        connectionChecked = true
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -214,30 +255,98 @@ fun Profile(
                                 }
                             }
                         }
-                    } else if (isArtist) {
+                        Spacer(modifier = Modifier.height(8.dp))
                         Button(
-                            onClick = {
-                                coroutineScope.launch {
-                                    if (isFollowing) {
-                                        userVM.unfollowArtist(loggedUserId, profileUserId) { success ->
-                                            if (success) isFollowing = false
+                            onClick = { innerNav.navigate("connections/$loggedUserId") },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5C0F1A)),
+                            shape = MaterialTheme.shapes.small
+                        ) {
+                            Text(text = "Conexiones", color = Color.White)
+                        }
+                    } else {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (isArtist) {
+                                Button(
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            if (isFollowing) {
+                                                userVM.unfollowArtist(loggedUserId, profileUserId) { success ->
+                                                    if (success) isFollowing = false
+                                                }
+                                            } else {
+                                                userVM.followArtist(loggedUserId, profileUserId) { success ->
+                                                    if (success) isFollowing = true
+                                                }
+                                            }
                                         }
-                                    } else {
-                                        userVM.followArtist(loggedUserId, profileUserId) { success ->
-                                            if (success) isFollowing = true
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (isFollowing) Color(0xFFE0E0E0) else Color(0xFF5C0F1A)
+                                    ),
+                                    shape = MaterialTheme.shapes.small
+                                ) {
+                                    Text(
+                                        text = if (isFollowing) "Siguiendo" else "Seguir",
+                                        color = if (isFollowing) Color.Black else Color.White
+                                    )
+                                }
+                            }
+                            // Connection button for non-owner profiles
+                            if (connectionChecked) {
+                                when (connectionStatus) {
+                                    "connected" -> {
+                                        Button(
+                                            onClick = { },
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                                            shape = MaterialTheme.shapes.small,
+                                            enabled = false
+                                        ) {
+                                            Text(text = "Conectados", color = Color.White)
+                                        }
+                                    }
+                                    "outgoing" -> {
+                                        Button(
+                                            onClick = { },
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0E0E0)),
+                                            shape = MaterialTheme.shapes.small,
+                                            enabled = false
+                                        ) {
+                                            Text(text = "Solicitud enviada", color = Color.Black)
+                                        }
+                                    }
+                                    "incoming" -> {
+                                        Button(
+                                            onClick = {
+                                                pendingRequestId?.let { reqId ->
+                                                    connectionVM.acceptRequest(reqId) { success ->
+                                                        if (success) connectionStatus = "connected"
+                                                    }
+                                                }
+                                            },
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5C0F1A)),
+                                            shape = MaterialTheme.shapes.small
+                                        ) {
+                                            Text(text = "Aceptar solicitud", color = Color.White)
+                                        }
+                                    }
+                                    else -> {
+                                        Button(
+                                            onClick = {
+                                                connectionVM.sendConnectionRequest(profileUserId.toLong()) { success ->
+                                                    if (success) connectionStatus = "outgoing"
+                                                }
+                                            },
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5C0F1A)),
+                                            shape = MaterialTheme.shapes.small
+                                        ) {
+                                            Text(text = "Conectar", color = Color.White)
                                         }
                                     }
                                 }
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isFollowing) Color(0xFFE0E0E0) else Color(0xFF5C0F1A)
-                            ),
-                            shape = MaterialTheme.shapes.small
-                        ) {
-                            Text(
-                                text = if (isFollowing) "Siguiendo" else "Seguir",
-                                color = if (isFollowing) Color.Black else Color.White
-                            )
+                            }
                         }
                     }
                 }

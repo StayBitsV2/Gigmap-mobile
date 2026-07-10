@@ -1,5 +1,7 @@
 package com.example.gigmap_frontend_sprint1.view
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
@@ -12,6 +14,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -69,7 +74,19 @@ fun ConcertDetails(
     val relatedConcerts = emptyList<Concerts>()
     val users = userVM.listaUsers
     val confirmedAttendees = concertVM.getConfirmedUsers(concert, users)
+    val context = LocalContext.current
+    val displayDateTime = try {
+        val parsed = OffsetDateTime.parse(concert.date)
+        val formatter = DateTimeFormatter.ofPattern("d 'de' MMMM yyyy - HH:mm", Locale("es", "ES"))
+        parsed.format(formatter)
+    } catch (e: Exception) {
+        "${concert.date.take(10).replace("-", " de ")}"
+    }
 
+    val hasIncompleteInfo = concert.description.isNullOrBlank() ||
+            concert.image.isNullOrBlank() ||
+            concert.genre.isNullOrBlank() ||
+            concert.artist == null
 
     val relatedEvents = relatedEventVM.listaRelatedEvents
 
@@ -175,6 +192,28 @@ fun ConcertDetails(
                     )
                 }
 
+                concert.artist?.let { artist ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = null,
+                            tint = BurgundyDark,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = artist.name.ifBlank { "Artista desconocido" },
+                            fontSize = 13.sp,
+                            color = Color(0xFF736D6D),
+                            fontWeight = FontWeight.Medium,
+                            fontFamily = InterFontFamily,
+                        )
+                    }
+                }
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(vertical = 2.dp)
@@ -187,7 +226,27 @@ fun ConcertDetails(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = concert.date.take(10).replace("-", " de "),
+                        text = displayDateTime,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        fontFamily = InterFontFamily,
+                        color = Color(0xFF736D6D)
+                    )
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(vertical = 2.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.MusicNote,
+                        contentDescription = null,
+                        tint = BurgundyDark,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = concert.genre.ifBlank { "Sin género" },
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium,
                         fontFamily = InterFontFamily,
@@ -205,6 +264,17 @@ fun ConcertDetails(
                     fontWeight = FontWeight.Medium,
                     fontFamily = InterFontFamily,
                 )
+
+                if (hasIncompleteInfo) {
+                    Text(
+                        text = "Información incompleta — algunos datos no están disponibles",
+                        color = Color(0xFFCC8800),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        fontFamily = InterFontFamily,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
             }
         }
 
@@ -243,13 +313,43 @@ fun ConcertDetails(
                 contentPadding = PaddingValues(vertical = 12.dp)
             ) {
                 Text(
-                    text = if (!isConfirmed) "Confirmar asistencia" else "Cancelar confirmación",
+                    text = if (!isConfirmed) "Asistiré" else "Cancelar asistencia",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
                     fontFamily = InterFontFamily
                 )
             }
 
+            Button(
+                onClick = {
+                    val uri = "geo:${concert.venue.latitude},${concert.venue.longitude}"
+                    val mapIntent = Intent(Intent.ACTION_VIEW).apply {
+                        data = Uri.parse(uri)
+                    }
+                    context.startActivity(mapIntent)
+                },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF2C7A3B)
+                ),
+                shape = RoundedCornerShape(8.dp),
+                contentPadding = PaddingValues(vertical = 12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.LocationOn,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "Abrir en Maps",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    fontFamily = InterFontFamily,
+                    color = Color.White
+                )
+            }
 
         }
 
@@ -493,7 +593,7 @@ fun ConcertDetails(
 
                 if (confirmedAttendees.size > 3) {
                     TextButton(
-                        onClick = { },
+                        onClick = { navController.navigate("attendees/${concert.id ?: concertId}") },
                         modifier = Modifier.align(Alignment.CenterHorizontally)
                     ) {
                         Text(

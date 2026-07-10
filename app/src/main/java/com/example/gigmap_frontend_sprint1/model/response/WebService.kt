@@ -3,7 +3,9 @@ package com.example.gigmap_frontend_sprint1.model.response
 import com.example.gigmap_frontend_sprint1.model.AttendeeRequest
 import com.example.gigmap_frontend_sprint1.model.Community
 import com.example.gigmap_frontend_sprint1.model.ConcertCreateRequest
-
+import com.example.gigmap_frontend_sprint1.model.ConnectionRequestResource
+import com.example.gigmap_frontend_sprint1.model.ConnectionResource
+import com.example.gigmap_frontend_sprint1.model.CreateConnectionRequest
 import com.example.gigmap_frontend_sprint1.model.Notification
 import com.example.gigmap_frontend_sprint1.model.Concerts
 import com.example.gigmap_frontend_sprint1.model.CreateDeviceTokenRequest
@@ -37,6 +39,9 @@ interface WebService {
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
     @GET("api/v1/concerts")
     suspend fun getConcerts(): Response<List<Concerts>>
+
+    @GET("api/v1/concerts/{id}")
+    suspend fun getConcertById(@Path("id") id: Long): Response<Concerts>
 
     @POST("api/v1/concerts")
     suspend fun createConcert(@Body concert: ConcertCreateRequest): Response<Concerts>
@@ -175,4 +180,26 @@ interface WebService {
     suspend fun getFollowedArtists(
         @Path("userId") userId: Long
     ): Response<List<Users>>
+
+    // ── Connections ──────────────────────────────────────────────────────────
+    @POST("api/v1/connections/requests")
+    suspend fun createConnectionRequest(@Body request: CreateConnectionRequest): Response<ConnectionRequestResource>
+
+    @GET("api/v1/connections/requests/incoming")
+    suspend fun getIncomingConnectionRequests(@Query("userId") userId: Long): Response<List<ConnectionRequestResource>>
+
+    @GET("api/v1/connections/requests/outgoing")
+    suspend fun getOutgoingConnectionRequests(@Query("userId") userId: Long): Response<List<ConnectionRequestResource>>
+
+    @PUT("api/v1/connections/requests/{requestId}/accept")
+    suspend fun acceptConnectionRequest(@Path("requestId") requestId: Long): Response<Void>
+
+    @DELETE("api/v1/connections/requests/{requestId}/reject")
+    suspend fun rejectConnectionRequest(@Path("requestId") requestId: Long): Response<Void>
+
+    @GET("api/v1/connections")
+    suspend fun getUserConnections(@Query("userId") userId: Long): Response<List<ConnectionResource>>
+
+    @GET("api/v1/connections/check")
+    suspend fun checkConnection(@Query("userId1") userId1: Long, @Query("userId2") userId2: Long): Response<Boolean>
 }

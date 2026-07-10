@@ -99,6 +99,23 @@ class ConcertViewModel : ViewModel() {
         }
     }
 
+    fun getConcertById(concertId: Int, onResult: (Concerts?) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val response = RetrofitClient.webService.getConcertById(concertId.toLong())
+                withContext(Dispatchers.Main) {
+                    if (response.isSuccessful && response.body() != null) {
+                        onResult(response.body())
+                    } else {
+                        onResult(null)
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) { onResult(null) }
+            }
+        }
+    }
+
     fun getConfirmedUsers(concert: Concerts, allUsers: List<Users>): List<Users> {
         val attendeeIds = concert.attendees ?: emptyList()
         return allUsers.filter { it.id in attendeeIds }

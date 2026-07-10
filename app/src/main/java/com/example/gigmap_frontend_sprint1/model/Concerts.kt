@@ -11,5 +11,6 @@ data class Concerts(
     val genre: String,
     val platform: Platform,
     val venue: Venue,
-    val attendees: List<Int> = emptyList()
+    val attendees: List<Int> = emptyList(),
+    val artist: Users? = null
 )
